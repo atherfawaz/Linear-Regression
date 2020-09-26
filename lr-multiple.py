@@ -14,13 +14,12 @@ def fetch_dataset(file_name, delimiter=','):
 def normalize_data(array):
     mean = np.mean(array, axis=0)
     std = np.std(array, axis=0)
-    return np.divide(np.subtract(array, mean), std), mean, std
+    return ((array - mean) / std), mean, std
 
 
 def cost_function(X, Y, theta):
     samples = Y.size
     cost = 0
-    h = np.dot(X, theta)
     cost = (1/(2 * samples)) * \
         np.sum(np.square(np.dot(X, theta) - Y))
     return cost
@@ -55,14 +54,10 @@ def plot_cost(cost):
     plt.show()
 
 
-def predict(features, theta):
-    features, _, _ = normalize_data(features)
+def predict(features, theta, x_mean, x_std):
+    features = np.subtract(features, x_mean) / x_std
     features = np.hstack([np.ones(1), features])
     return np.dot(features, theta)
-
-
-def denormalize(prediction, arr_mean, arr_std):
-    return prediction * arr_std + arr_mean
 
 
 def main():
@@ -74,7 +69,6 @@ def main():
 
     # norms
     X, x_mean, x_std = normalize_data(X)
-    Y, y_mean, y_std = normalize_data(Y)
 
     # thetas
     X = np.hstack([np.ones((sample_count, 1)), X])
@@ -92,9 +86,9 @@ def main():
     print('Cost: ', cost[-1])
     plot_cost(cost)
 
+    # calculating for a given value
     features = np.array([1650, 3])
-    prediction = predict(features, theta)
-    prediction = denormalize(prediction, y_mean, y_std)
+    prediction = predict(features, theta, x_mean, x_std)
     print('Prediction: ', prediction)
 
 
