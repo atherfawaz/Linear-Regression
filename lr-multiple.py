@@ -1,59 +1,86 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import random
 
 
 def fetch_dataset(file_name, delimiter=','):
-    house_size = np.array([])
-    house_bedroom_count = np.array([])
-    house_price = np.array([])
-    file = open(file_name)
-    for line in file:
-        temp = line.split(delimiter)
-        house_size = np.append(house_size, int(temp[0]))
-        house_bedroom_count = np.append(
-            house_bedroom_count, int(temp[1]))
-        temp[2] = temp[2].replace('\n', '')
-        house_price = np.append(house_price, int(temp[2]))
-    file.close()
-    return house_size, house_bedroom_count, house_price
+    dataset = pd.read_csv(file_name, delimiter, header=None)
+    Y = dataset.iloc[:, -1:]
+    X = dataset.iloc[:, : -1]
+    return np.array(X), np.array(Y)
 
 
-def normalize_data(H_SIZE, H_BEDROOMCOUNT, H_PRICE, means, std_deviations):
-    # subtract
-    H_SIZE = np.subtract(H_SIZE, means[0])
-    H_BEDROOMCOUNT = np.subtract(H_BEDROOMCOUNT, means[1])
-    H_PRICE = np.subtract(H_PRICE, means[2])
-    # divide
-    H_SIZE = np.divide(H_SIZE, std_deviations[0])
-    H_BEDROOMCOUNT = np.divide(H_BEDROOMCOUNT, std_deviations[1])
-    H_PRICE = np.divide(H_PRICE, std_deviations[2])
-    return H_SIZE, H_BEDROOMCOUNT, H_PRICE
+def normalize_data(array):
+    mean = np.mean(array, axis=0)
+    std = np.std(array, axis=0)
+    return np.divide(np.subtract(array, mean), std), mean, std
 
 
-def get_norms(H_SIZE, H_BEDROOMCOUNT, H_PRICE):
-    means = []
-    means.append(np.mean(H_SIZE))
-    means.append(np.mean(H_BEDROOMCOUNT))
-    means.append(np.mean(H_PRICE))
-    std_divs = []
-    std_divs.append(np.std(H_SIZE))
-    std_divs.append(np.std(H_BEDROOMCOUNT))
-    std_divs.append(np.std(H_PRICE))
-    return means, std_divs
+def cost_function(X, Y, theta):
+    samples = Y.size
+    cost = 0
+    h = np.dot(X, theta)
+    cost = (1/(2 * samples)) * \
+        np.sum(np.square(np.dot(X, theta) - Y))
+    return cost
+
+
+def gradient_descent(X, Y, theta, learning_rate, iterations):
+    print('X: ', X.shape)
+    print('Y: ', Y.shape)
+    print('Theta: ', theta.shape)
+    count = iterations
+    samples = len(Y)
+    theta = theta.copy()
+    cost = []
+    for i in range(2):
+        theta = theta - (learning_rate / samples) * \
+            np.transpose(X).dot(np.dot(X, theta) - Y)
+        cost.append(cost_function(X, Y, theta))
+        iterations -= 1
+    while iterations and (cost[count - iterations - 2] - cost[count - iterations - 1] > 0.001):
+        theta = theta - (learning_rate / samples) * \
+            np.transpose(X).dot(np.dot(X, theta) - Y)
+        cost.append(cost_function(X, Y, theta))
+        iterations -= 1
+    return theta, cost
+
+
+def plot_cost(cost):
+    plt.plot(list(range(len(cost))), cost, '-')
+    plt.title('Cost VS Iterations')
+    plt.xlabel('Number of iterations')
+    plt.ylabel('Cost J')
+    plt.show()
 
 
 def main():
 
     # fetch dataset
-    H_SIZE, H_BEDROOMCOUNT, H_PRICE = fetch_dataset('ex1data2.txt')
+    X, Y = fetch_dataset('ex1data2.txt')
+    sample_count = len(Y)
+    feature_count = X.shape[1]
 
-    # calculating normalization parameters
-    means, std_divs = get_norms(H_SIZE, H_BEDROOMCOUNT, H_SIZE)
+    # norms
+    X, x_mean, x_std = normalize_data(X)
+    Y, y_mean, y_std = normalize_data(Y)
 
-    # normalizing dataset
-    H_SIZE, H_BEDROOMCOUNT, H_PRICE = normalize_data(
-        H_SIZE, H_BEDROOMCOUNT, H_PRICE, means, std_divs)
+    # thetas
+    X = np.hstack([np.ones((sample_count, 1)), X])
+    theta = np.random.rand(feature_count + 1, 1)
+
+    # hyperparameters
+    learning_rate = 0.5
+    iterations = 50
+
+    # running gradient descent
+    theta, cost = gradient_descent(X, Y, theta, learning_rate, iterations)
+
+    # printing results
+    print('Thetas: ', theta)
+    print('Cost: ', cost[-1])
+    plot_cost(cost)
 
 
 if __name__ == "__main__":
