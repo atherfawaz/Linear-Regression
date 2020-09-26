@@ -55,6 +55,16 @@ def plot_cost(cost):
     plt.show()
 
 
+def predict(features, theta):
+    features, _, _ = normalize_data(features)
+    features = np.hstack([np.ones(1), features])
+    return np.dot(features, theta)
+
+
+def denormalize(prediction, arr_mean, arr_std):
+    return prediction * arr_std + arr_mean
+
+
 def main():
 
     # fetch dataset
@@ -81,6 +91,11 @@ def main():
     print('Thetas: ', theta)
     print('Cost: ', cost[-1])
     plot_cost(cost)
+
+    features = np.array([1650, 3])
+    prediction = predict(features, theta)
+    prediction = denormalize(prediction, y_mean, y_std)
+    print('Prediction: ', prediction)
 
 
 if __name__ == "__main__":
